@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getTemplate } from "@/lib/registry";
@@ -16,8 +16,59 @@ export default function AppInstanceWorkspace({ params }) {
   const [activeCreation, setActiveCreation] = useState(null);
   const [creations, setCreations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const fetchingRef = useRef(false);
+  const pollingActiveRef = useRef(false);
 
-  const fetchAppData = async () => {
+  const pollCreationStatus = async (creationId) => {
+    if (pollingActiveRef.current) return;
+    pollingActiveRef.current = true;
+    try {
+      const { data: userCreations } = await axios.get(`/api/creations?appId=${appId}`);
+      setCreations(userCreations || []);
+
+      const current = userCreations.find(c => c.id === creationId);
+      if (!current) {
+        setGenerating(false);
+        pollingActiveRef.current = false;
+        return;
+      }
+
+      if (current.status === "completed" || current.status === "failed") {
+        setActiveCreation(current);
+        setGenerating(false);
+        pollingActiveRef.current = false;
+      } else {
+        pollingActiveRef.current = false;
+        setTimeout(() => pollCreationStatus(creationId), 3000);
+      }
+    } catch (err) {
+      console.error("Polling error:", err);
+      setGenerating(false);
+      pollingActiveRef.current = false;
+    }
+  };
+
+  const handleCreationCompleted = (data) => {
+    if (!data) {
+      fetchAppData();
+      return;
+    }
+
+    if (data.status === "completed" || data.status === "failed") {
+      setActiveCreation(data);
+      setGenerating(false);
+      fetchAppData(); // Sync creations list
+    } else if (data.status === "processing") {
+      setActiveCreation(data);
+      setGenerating(true);
+      pollCreationStatus(data.id);
+    }
+  };
+
+  const fetchAppData = async (immediateActiveCreation = null) => {
+    if (fetchingRef.current && !immediateActiveCreation) return;
+    fetchingRef.current = true;
     try {
       const { data: app } = await axios.get(`/api/app-instances?id=${appId}`);
       setAppInstance(app);
@@ -25,15 +76,29 @@ export default function AppInstanceWorkspace({ params }) {
       const { data: userCreations } = await axios.get(`/api/creations?appId=${appId}`);
       setCreations(userCreations || []);
 
-      if (userCreations && userCreations.length > 0) {
-        // Find latest active creation or default to first
-        const processing = userCreations.find(c => c.status === "processing");
-        setActiveCreation(processing || userCreations[0]);
-      }
+      setActiveCreation((prevActive) => {
+        if (immediateActiveCreation) {
+          return userCreations.find(c => c.id === immediateActiveCreation.id) || immediateActiveCreation;
+        }
+        if (userCreations && userCreations.length > 0) {
+          const processing = userCreations.find(c => c.status === "processing");
+          if (processing) {
+            setGenerating(true);
+            pollCreationStatus(processing.id);
+            return processing;
+          }
+          if (prevActive) {
+            const updated = userCreations.find(c => c.id === prevActive.id);
+            if (updated) return updated;
+          }
+        }
+        return null;
+      });
     } catch (err) {
       console.error("Error loading app instance:", err);
       toast.error("Failed to load application workspace.");
     } finally {
+      fetchingRef.current = false;
       setLoading(false);
     }
   };
@@ -52,18 +117,6 @@ export default function AppInstanceWorkspace({ params }) {
       };
     }
   }, [appInstance]);
-
-  // Polling loop: update creations if any are "processing"
-  useEffect(() => {
-    const hasProcessing = creations.some((c) => c.status === "processing");
-    if (!hasProcessing) return;
-
-    const interval = setInterval(() => {
-      fetchAppData();
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [creations]);
 
   if (loading) {
     return (
@@ -118,7 +171,9 @@ export default function AppInstanceWorkspace({ params }) {
             <TemplateComponent
               appInstance={appInstance}
               activeCreation={activeCreation}
-              onCreationCompleted={fetchAppData}
+              generating={generating}
+              setGenerating={setGenerating}
+              onCreationCompleted={handleCreationCompleted}
             />
           ) : (
             <div className="text-xs text-red-500 font-bold">

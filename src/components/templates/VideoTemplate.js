@@ -55,7 +55,7 @@ function CustomSelect({ value, onChange, options, placeholder = "Select option",
   );
 }
 
-export default function VideoTemplate({ appInstance, userCredits, activeCreation, onCreationCompleted }) {
+export default function VideoTemplate({ appInstance, userCredits, activeCreation, onCreationCompleted, generating: propGenerating, setGenerating: propSetGenerating }) {
   const parsedConfig = appInstance.config ? JSON.parse(appInstance.config) : {};
   const userParams = parsedConfig.userParams || [];
 
@@ -63,7 +63,9 @@ export default function VideoTemplate({ appInstance, userCredits, activeCreation
   const [sourceImage, setSourceImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [duration, setDuration] = useState(5);
-  const [generating, setGenerating] = useState(false);
+  const [localGenerating, setLocalGenerating] = useState(false);
+  const generating = propGenerating !== undefined ? propGenerating : localGenerating;
+  const setGenerating = propSetGenerating !== undefined ? propSetGenerating : setLocalGenerating;
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Dynamic Parameter State

@@ -48,13 +48,15 @@ function CustomSelect({ value, onChange, options, placeholder = "Select option",
   );
 }
 
-export default function AudioTemplate({ appInstance, userCredits, activeCreation, onCreationCompleted }) {
+export default function AudioTemplate({ appInstance, userCredits, activeCreation, onCreationCompleted, generating: propGenerating, setGenerating: propSetGenerating }) {
   const parsedConfig = appInstance.config ? JSON.parse(appInstance.config) : {};
   const userParams = parsedConfig.userParams || [];
 
   const [audioUrl, setAudioUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [generating, setGenerating] = useState(false);
+  const [localGenerating, setLocalGenerating] = useState(false);
+  const generating = propGenerating !== undefined ? propGenerating : localGenerating;
+  const setGenerating = propSetGenerating !== undefined ? propSetGenerating : setLocalGenerating;
 
   // Dynamic Parameter State
   const [customValues, setCustomValues] = useState(() => {
