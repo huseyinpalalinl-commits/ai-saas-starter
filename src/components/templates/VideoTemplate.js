@@ -217,7 +217,7 @@ export default function VideoTemplate({ appInstance, userCredits, activeCreation
       }
 
       const { data } = await axios.post("/api/generation", {
-        prompt: `${parsedConfig.systemPrompt || ""} ${finalPrompt}`.trim(),
+        prompt: finalPrompt.trim(),
         inputImage: inputImageVal,
         aspectRatio: "16:9",
         appId: appInstance.id,
