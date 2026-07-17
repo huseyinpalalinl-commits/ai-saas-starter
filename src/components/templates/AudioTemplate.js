@@ -479,7 +479,7 @@ export default function AudioTemplate({ appInstance, userCredits, activeCreation
               ) : activeCreation.status === "completed" ? (
                 <p className="font-medium whitespace-pre-wrap">{activeCreation.resultImage || "Done."}</p>
               ) : (
-                <span className="text-red-500 font-bold">Transcription failed: {activeCreation.error || "MuAPI error."}</span>
+                <span className="text-red-500 font-bold">Transcription failed: {activeCreation.error || "generation error."}</span>
               )
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center text-secondary-text font-bold uppercase tracking-wider">

@@ -9,7 +9,7 @@ export const templateRegistry = {
     name: "AI Image Studio",
     description: "Launch a custom AI art and photo studio. Perfect for generating cyberpunk cityscapes, custom oil paintings, and before-after comparisons.",
     component: ImageTemplate,
-    modelEndpoint: "predictions", // default MUAPI endpoint
+    modelEndpoint: "predictions", // image generation (Pollinations)
     defaultConfig: {
       systemPrompt: "You are an artistic AI that generates photorealistic image renderings based on text prompts.",
       aspectRatio: "1:1",
@@ -58,7 +58,7 @@ export const templateRegistry = {
     name: "Audio Transcription Suite",
     description: "Turn audio files, podcasts, and recordings into accurate written text, SRT captions, and meeting notes.",
     component: AudioTemplate,
-    modelEndpoint: "predictions", // Whisper predictions
+    modelEndpoint: "predictions",
     defaultConfig: {
       systemPrompt: "Transcribe the following audio accurately, retaining all verbal statements.",
       model: "openai-whisper",

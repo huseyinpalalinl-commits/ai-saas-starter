@@ -21,7 +21,7 @@ const config = {
     }
   },
   ai: {
-    apiKey: process.env.MUAPIAPP_API_KEY,
+    geminiApiKey: process.env.GEMINI_API_KEY,
     generationCost: 1, // Default cost per AI call
   }
 };

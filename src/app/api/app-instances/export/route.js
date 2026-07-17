@@ -70,7 +70,7 @@ function getCleanedRegistryContent(templateId) {
     name: "AI Image Studio",
     description: "Launch a custom AI art and photo studio. Perfect for generating cyberpunk cityscapes, custom oil paintings, and before-after comparisons.",
     component: ImageTemplate,
-    modelEndpoint: "predictions", // default MUAPI endpoint
+    modelEndpoint: "predictions",
     defaultConfig: {
       systemPrompt: "You are an artistic AI that generates photorealistic image renderings based on text prompts.",
       aspectRatio: "1:1",
@@ -767,7 +767,7 @@ export default function StandaloneWorkspace() {
           "DATABASE_URL",
           "DIRECT_URL",
           "NEXTAUTH_SECRET",
-          "MUAPIAPP_API_KEY",
+          "GEMINI_API_KEY",
           "WEBHOOK_URL",
           "GOOGLE_CLIENT_ID",
           "GOOGLE_CLIENT_SECRET",

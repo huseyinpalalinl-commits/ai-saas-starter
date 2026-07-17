@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "AI SaaS Template - Powered by MUAPI",
+  title: "AI SaaS Template - Powered by AI",
   description: "Deploy a premium, monetized credit-based SaaS application in minutes.",
 };
 

@@ -584,7 +584,7 @@ export default function VideoTemplate({ appInstance, userCredits, activeCreation
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-xs text-red-500 font-bold">
                   <span>Generation failed.</span>
-                  <span className="text-[10px] text-secondary-text font-normal">{activeCreation.error || "MuAPI error occurred."}</span>
+                  <span className="text-[10px] text-secondary-text font-normal">{activeCreation.error || "Generation error occurred."}</span>
                 </div>
               )}
             </div>

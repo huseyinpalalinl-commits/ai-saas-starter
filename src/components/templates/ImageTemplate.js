@@ -539,14 +539,14 @@ export default function ImageTemplate({ appInstance, userCredits, activeCreation
                 {activeCreation.status === "processing" ? (
                   <div className="flex flex-col items-center gap-4 text-xs font-semibold text-secondary-text">
                     <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <span className="animate-pulse">MuAPI processing image...</span>
+                    <span className="animate-pulse">Generating image...</span>
                   </div>
                 ) : activeCreation.status === "completed" ? (
                   <img src={activeCreation.resultImage} alt="AI output" className="w-full h-full object-contain" />
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-xs text-red-500 font-bold">
                     <span>Generation failed.</span>
-                    <span className="text-[10px] text-secondary-text font-normal">{activeCreation.error || "MuAPI error occurred."}</span>
+                    <span className="text-[10px] text-secondary-text font-normal">{activeCreation.error || "Generation error occurred."}</span>
                   </div>
                 )}
               </div>

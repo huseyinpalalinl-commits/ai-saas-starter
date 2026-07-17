@@ -2,223 +2,160 @@ import { prisma } from "../prisma";
 import { UserService } from "./user";
 import config from "../config";
 
+// Pollinations.ai: free, keyless image generation.
+// Gemini API: free-tier text generation for chat templates.
+
+const ASPECT_DIMENSIONS = {
+  "1:1": [1024, 1024],
+  "16:9": [1280, 720],
+  "9:16": [720, 1280],
+  "4:3": [1024, 768],
+  "3:4": [768, 1024],
+  "21:9": [1344, 576],
+};
+
+function isLlmEndpoint(endpoint) {
+  return endpoint === "any-llm-models" || (endpoint || "").includes("completions");
+}
+
+function buildPollinationsUrl(prompt, aspectRatio, inputImage) {
+  const [width, height] = ASPECT_DIMENSIONS[aspectRatio] || ASPECT_DIMENSIONS["1:1"];
+  const seed = Math.floor(Math.random() * 1e9);
+  let url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&nologo=true`;
+  // Image-to-image only works with a publicly reachable URL (not base64 data URIs)
+  if (inputImage && /^https?:\/\//.test(inputImage)) {
+    url += `&image=${encodeURIComponent(inputImage)}&model=kontext`;
+  }
+  return url;
+}
+
+async function generateChatCompletion(prompt, model) {
+  const apiKey = config.ai.geminiApiKey;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not configured");
+  }
+
+  let contents = [{ role: "user", parts: [{ text: prompt }] }];
+  let systemPromptText = "You are a helpful AI assistant.";
+  try {
+    const parsed = JSON.parse(prompt);
+    if (Array.isArray(parsed.chatHistory)) {
+      contents = parsed.chatHistory.map((m) => ({
+        role: m.role === "user" ? "user" : "model",
+        parts: [{ text: String(m.content ?? "") }],
+      }));
+    }
+    if (parsed.systemPrompt) {
+      systemPromptText = parsed.systemPrompt;
+    }
+  } catch (e) {
+    // Raw string prompt; use as-is
+  }
+
+  const geminiModel = model && model.startsWith("gemini") ? model : "gemini-2.5-flash";
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents,
+        systemInstruction: { parts: [{ text: systemPromptText }] },
+        generationConfig: { temperature: 0.7 },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini API error: ${response.status} ${errorText.slice(0, 300)}`);
+  }
+
+  const json = await response.json();
+  const text = (json.candidates?.[0]?.content?.parts || [])
+    .map((p) => p.text || "")
+    .join("")
+    .trim();
+  if (!text) {
+    throw new Error("Gemini returned an empty response");
+  }
+  return text;
+}
+
+async function generateImage(prompt, aspectRatio, inputImage) {
+  const imageUrl = buildPollinationsUrl(prompt, aspectRatio, inputImage);
+
+  // Fetch once server-side to make sure the image actually generates.
+  // Pollinations caches results by URL, so the stored URL stays valid.
+  const response = await fetch(imageUrl, { signal: AbortSignal.timeout(60000) });
+  const contentType = response.headers.get("content-type") || "";
+  if (!response.ok || !contentType.startsWith("image/")) {
+    throw new Error(`Image generation failed: ${response.status}`);
+  }
+  return imageUrl;
+}
+
 export const AIService = {
   /**
-   * Submit a prediction job to MuAPI, deduct credits, and execute inline polling.
+   * Generate content (image via Pollinations, text via Gemini), deduct credits,
+   * and persist the result. Credits are refunded automatically on failure.
    */
   async generate(userId, { prompt, inputImage, aspectRatio, modelEndpoint = "predictions", appId = null, creditCost = null, model = null, customParams = {} }) {
     const cost = creditCost !== null ? Number(creditCost) : config.ai.generationCost;
-    
-    // 1. Deduct credits
+
+    // 1. Deduct credits up front
     await UserService.deductCredits(userId, cost);
 
-    const apiKey = config.ai.apiKey;
-    if (!apiKey) {
-      // Return local mock generation in development if API key is missing
-      console.warn("MUAPIAPP_API_KEY is not configured. Running offline simulation.");
-      const mockRequestId = `mock_${Math.random().toString(36).substring(2, 9)}`;
-      
+    try {
+      const isLlm = isLlmEndpoint(modelEndpoint);
+      const resultImage = isLlm
+        ? await generateChatCompletion(prompt, model)
+        : await generateImage(prompt, aspectRatio, inputImage);
+
+      // 2. Persist the completed creation
       const creation = await prisma.creation.create({
         data: {
           userId,
           prompt,
           inputImage,
-          requestId: mockRequestId,
+          requestId: `gen_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
           status: "completed",
-          resultImage: inputImage || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80",
+          resultImage,
           creditCost: cost,
           aspectRatio,
           appId,
-        }
-      });
-      return { id: creation.id, resultImage: creation.resultImage, status: "completed" };
-    }
-
-    // 2. Submit to MuAPI
-    const webhookUrl = `${config.auth.webhook_url}/api/webhook/muapi`;
-    const isLlm = modelEndpoint === "any-llm-models" || modelEndpoint.includes("completions");
-    let finalEndpoint = isLlm ? "any-llm-models" : modelEndpoint;
-
-    if (finalEndpoint === "predictions" || !finalEndpoint) {
-      let modelName = model || "nano-banana-2";
-      if (inputImage && (modelName === "nano-banana-2" || modelName === "nano-banana-pro")) {
-        modelName = `${modelName}-edit`;
-      }
-      finalEndpoint = modelName;
-    }
-
-    let bodyPayload = {};
-    if (isLlm) {
-      let finalPrompt = prompt;
-      let systemPromptText = "You are a helpful AI assistant.";
-      try {
-        const parsed = JSON.parse(prompt);
-        if (parsed.chatHistory) {
-          finalPrompt = parsed.chatHistory.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n') + '\nAssistant:';
-        }
-        if (parsed.systemPrompt) {
-          systemPromptText = parsed.systemPrompt;
-        }
-      } catch (e) {
-        // Fallback to raw prompt string
-      }
-
-      bodyPayload = {
-        prompt: finalPrompt,
-        system_prompt: systemPromptText,
-        model: model || "google/gemini-2.5-flash",
-        temperature: 0.7,
-        ...customParams,
-      };
-    } else {
-      bodyPayload = {
-        prompt,
-        images_list: inputImage ? [inputImage] : [],
-        aspect_ratio: aspectRatio || "1:1",
-        ...customParams,
-        webhook: webhookUrl,
-      };
-    }
-
-    const targetUrl = finalEndpoint.startsWith("http://") || finalEndpoint.startsWith("https://")
-      ? `${finalEndpoint}?webhook=${encodeURIComponent(webhookUrl)}`
-      : `https://api.muapi.ai/api/v1/${finalEndpoint}?webhook=${encodeURIComponent(webhookUrl)}`;
-
-    const response = await fetch(targetUrl, {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(bodyPayload),
-    });
-
-    if (!response.ok) {
-      // Refund credits on submission error
-      await UserService.addCredits(userId, cost);
-      const errorText = await response.text();
-      throw new Error(`API submission failed: ${response.status} ${errorText}`);
-    }
-
-    const responseJson = await response.json();
-    const requestId = responseJson.request_id || responseJson.id;
-    if (!requestId) {
-      await UserService.addCredits(userId, cost);
-      throw new Error("No request_id returned from MUAPI");
-    }
-
-    // 3. Save initial record to database
-    let creation = await prisma.creation.create({
-      data: {
-        userId,
-        prompt,
-        inputImage,
-        requestId,
-        status: "processing",
-        creditCost: cost,
-        aspectRatio,
-        appId,
-      }
-    });
-
-    // 4. Inline Polling Loop (up to 15 seconds)
-    let resultImage = "";
-    let status = "processing";
-    let completed = false;
-    let attempts = 0;
-
-    while (!completed && attempts < 6) {
-      await new Promise((resolve) => setTimeout(resolve, 2500));
-      attempts++;
-
-      try {
-        const pollResponse = await fetch(`https://api.muapi.ai/api/v1/predictions/${requestId}/result`, {
-          headers: { "x-api-key": apiKey },
-        });
-
-        if (pollResponse.ok) {
-          const pollJson = await pollResponse.json();
-          const checkStatus = pollJson.status || pollJson.state;
-
-          if (checkStatus === "completed" || checkStatus === "succeeded") {
-            const outputs = pollJson.outputs || [];
-            resultImage = outputs[0] || pollJson.output;
-            status = "completed";
-            completed = true;
-          } else if (checkStatus === "failed") {
-            status = "failed";
-            completed = true;
-          }
-        }
-      } catch (pollErr) {
-        console.error("Error polling prediction:", pollErr);
-      }
-    }
-
-    // 5. Update creation record in database
-    if (completed) {
-      creation = await prisma.creation.update({
-        where: { id: creation.id },
-        data: {
-          status,
-          resultImage: status === "completed" ? resultImage : null,
-          error: status === "failed" ? "Polling returned failed status" : null,
-        }
+        },
       });
 
-      // Refund if failed
-      if (status === "failed") {
-        await UserService.addCredits(userId, cost);
-      }
+      return { id: creation.id, resultImage: creation.resultImage, status: creation.status };
+    } catch (error) {
+      // 3. Refund credits on any failure
+      await UserService.addCredits(userId, cost);
+      throw error;
     }
-
-    return { id: creation.id, resultImage: creation.resultImage, status: creation.status };
   },
 
   /**
-   * Sync and heal status of a creation record using MuAPI state lookup.
+   * Generation is now synchronous, so there is nothing to poll.
+   * Kept for backward compatibility with callers that sync stale records.
    */
   async syncStatus(creationId) {
     const creation = await prisma.creation.findUnique({
       where: { id: creationId },
-      include: { app: true }
+      include: { app: true },
     });
     if (!creation || creation.status !== "processing") return creation;
 
-    const apiKey = config.ai.apiKey;
-    if (!apiKey) return creation;
-
-    try {
-      const response = await fetch(`https://api.muapi.ai/api/v1/predictions/${creation.requestId}/result`, {
-        headers: { "x-api-key": apiKey },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        const checkStatus = result.status || result.state;
-
-        if (checkStatus === "completed" || checkStatus === "succeeded") {
-          const outputs = result.outputs || [];
-          const outputUrl = outputs[0] || result.output;
-          return await prisma.creation.update({
-            where: { id: creationId },
-            data: { status: "completed", resultImage: outputUrl },
-            include: { app: true }
-          });
-        } else if (checkStatus === "failed") {
-          // Refund credits
-          await UserService.addCredits(creation.userId, creation.creditCost);
-          return await prisma.creation.update({
-            where: { id: creationId },
-            data: { status: "failed", error: result.error || "Generation failed" },
-            include: { app: true }
-          });
-        }
-      }
-    } catch (e) {
-      console.error(`Error syncing creation state ${creationId}:`, e);
-    }
-
-    return creation;
-  }
+    // Legacy "processing" records (from the old async flow) can never
+    // complete anymore: mark them failed and refund.
+    await UserService.addCredits(creation.userId, creation.creditCost);
+    return await prisma.creation.update({
+      where: { id: creationId },
+      data: { status: "failed", error: "Generation timed out" },
+      include: { app: true },
+    });
+  },
 };

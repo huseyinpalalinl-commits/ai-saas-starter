@@ -1,42 +1,30 @@
 import { NextResponse } from "next/server";
-import config from "@/lib/config";
+
+// Reference images are converted to base64 data URLs and sent straight to the
+// generation pipeline; no external CDN is involved.
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // 4 MB
 
 export async function POST(req) {
   try {
     const formData = await req.formData();
     const file = formData.get("file");
-    const apiKey = config.ai.apiKey;
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    if (!apiKey || apiKey.includes("your_") || apiKey.trim() === "") {
-      // Offline/Local Base64 Fallback
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      const base64Url = `data:${file.type};base64,${buffer.toString("base64")}`;
-      return NextResponse.json({ url: base64Url });
+    if (!file.type?.startsWith("image/")) {
+      return NextResponse.json({ error: "Only image files are allowed" }, { status: 400 });
     }
 
-    const uploadFormData = new FormData();
-    uploadFormData.append("file", file);
-
-    const uploadRes = await fetch("https://api.muapi.ai/api/v1/upload_file", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-      },
-      body: uploadFormData,
-    });
-
-    if (!uploadRes.ok) {
-      const errorText = await uploadRes.text();
-      return NextResponse.json({ error: `CDN upload failed: ${errorText}` }, { status: 500 });
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json({ error: "Image must be smaller than 4 MB" }, { status: 400 });
     }
 
-    const result = await uploadRes.json();
-    return NextResponse.json({ url: result.url || result.file_url });
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64Url = `data:${file.type};base64,${buffer.toString("base64")}`;
+    return NextResponse.json({ url: base64Url });
   } catch (error) {
     console.error("File upload error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

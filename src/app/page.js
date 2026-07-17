@@ -517,7 +517,7 @@ export default function PlatformDashboard() {
                             type="text"
                             value={endpointOverride}
                             onChange={(e) => setEndpointOverride(e.target.value)}
-                            placeholder="e.g. https://api.muapi.ai/api/v1/nano-banana-2"
+                            placeholder="e.g. gemini-2.5-flash"
                             className="w-full bg-bg-page border border-divider/60 rounded py-2 px-3 text-xs outline-none focus:border-primary/60 transition-all font-semibold text-primary-text min-h-[38px]"
                           />
                         </div>
@@ -539,7 +539,7 @@ export default function PlatformDashboard() {
                             type="text"
                             value={editEndpointOverride}
                             onChange={(e) => setEditEndpointOverride(e.target.value)}
-                            placeholder="e.g. https://api.muapi.ai/api/v1/nano-banana-2-edit"
+                            placeholder="e.g. gemini-2.5-flash"
                             className="w-full bg-bg-page border border-divider/60 rounded py-2 px-3 text-xs outline-none focus:border-primary/60 transition-all font-semibold text-primary-text min-h-[38px]"
                           />
                         </div>
