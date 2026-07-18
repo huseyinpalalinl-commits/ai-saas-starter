@@ -76,7 +76,7 @@ export default function Pricing() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <h3 className="text-sm font-extrabold uppercase tracking-wide text-primary-text">{plan.name}</h3>
-                  <p className="text-2xl font-black tracking-tight text-white">{plan.price}</p>
+                  <p className="text-2xl font-black tracking-tight text-primary-text">{plan.price}</p>
                 </div>
                 
                 <div className="text-xs bg-bg-page/50 border border-divider/30 p-3 rounded text-center font-extrabold text-primary">

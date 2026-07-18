@@ -157,7 +157,7 @@ export default function AppInstanceWorkspace({ params }) {
         {/* Workspace Title & Badge */}
         <div className="flex items-center justify-between border-b border-divider/40 pb-4">
           <div className="space-y-1">
-            <h1 className="text-xl font-black uppercase tracking-tight text-white">{appInstance.name}</h1>
+            <h1 className="text-xl font-black uppercase tracking-tight text-primary-text">{appInstance.name}</h1>
             <p className="text-xs text-secondary-text">Configure prompts and test generations live in this custom instance.</p>
           </div>
           <span className="text-[10px] uppercase font-black px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary tracking-widest shrink-0">

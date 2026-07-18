@@ -4,15 +4,15 @@
   --font-sans: var(--font-inter), sans-serif;
   --font-outfit: var(--font-inter), sans-serif;
   
-  --color-bg-page: var(--bg-page, #09090b);
-  --color-bg-card: var(--bg-card, #18181b);
-  --color-bg-card-hover: var(--bg-card-hover, #27272a);
-  --color-bg-elevated: var(--bg-elevated, #202024);
-  --color-divider: var(--divider, #3f3f46);
-  --color-primary: var(--primary, #8b5cf6);
-  --color-primary-hover: var(--primary-hover, #7c3aed);
-  --color-primary-text: var(--primary-text, #f4f4f5);
-  --color-secondary-text: var(--secondary-text, #a1a1aa);
+  --color-bg-page: var(--bg-page, #f8fafc);
+  --color-bg-card: var(--bg-card, #ffffff);
+  --color-bg-card-hover: var(--bg-card-hover, #f1f5f9);
+  --color-bg-elevated: var(--bg-elevated, #ffffff);
+  --color-divider: var(--divider, #e2e8f0);
+  --color-primary: var(--primary, #7c3aed);
+  --color-primary-hover: var(--primary-hover, #6d28d9);
+  --color-primary-text: var(--primary-text, #0f172a);
+  --color-secondary-text: var(--secondary-text, #64748b);
   --color-primary-btn-text: var(--primary-btn-text, #ffffff);
 }
 
@@ -73,6 +73,11 @@
   color: var(--primary-btn-text, #ffffff) !important;
 }
 
+/* Soft elevation for cards on light backgrounds */
+.bg-bg-card {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.1);
+}
+
 @layer base {
   html, body {
     background-color: var(--color-bg-page);
@@ -86,17 +91,18 @@
 
 /* Glassmorphism Utilities */
 .glass-panel {
-  background: rgba(24, 24, 27, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(63, 63, 70, 0.5);
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 .glass-dropdown {
-  background: rgba(15, 15, 18, 0.95);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(63, 63, 70, 0.6);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.15);
 }
 
 /* Premium Scrollbars */

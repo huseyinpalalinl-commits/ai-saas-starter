@@ -325,7 +325,7 @@ export default function StandaloneWorkspace() {
       <main className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8 gap-6 overflow-y-auto scrollbar-subtle">
         <div className="flex items-center justify-between border-b border-divider/40 pb-4">
           <div className="space-y-1">
-            <h1 className="text-xl font-black uppercase tracking-tight text-white">{standaloneConfig.name}</h1>
+            <h1 className="text-xl font-black uppercase tracking-tight text-primary-text">{standaloneConfig.name}</h1>
             <p className="text-xs text-secondary-text">Configure prompts and generate outputs live in your dedicated workspace.</p>
           </div>
           <span className="text-[10px] uppercase font-black px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary tracking-widest shrink-0">

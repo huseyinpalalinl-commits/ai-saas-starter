@@ -131,7 +131,7 @@ export default function AppInstancePricing({ params }) {
               <span className="text-[10px] font-black uppercase text-secondary-text tracking-widest block">Available Balance</span>
               <span className="text-xs text-secondary-text font-semibold">Ready for custom generations</span>
             </div>
-            <div className="text-xl font-black text-white flex items-center gap-1">
+            <div className="text-xl font-black text-primary-text flex items-center gap-1">
               <FaDollarSign className="text-emerald-500 text-sm" />
               <span>{session.user.credits || 0} Credits</span>
             </div>
@@ -156,7 +156,7 @@ export default function AppInstancePricing({ params }) {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <h3 className="text-sm font-extrabold uppercase tracking-wide text-primary-text">{plan.name}</h3>
-                  <p className="text-2xl font-black tracking-tight text-white">{plan.price}</p>
+                  <p className="text-2xl font-black tracking-tight text-primary-text">{plan.price}</p>
                 </div>
                 
                 <div className="text-xs bg-bg-page/50 border border-divider/30 p-3 rounded text-center font-extrabold text-primary">

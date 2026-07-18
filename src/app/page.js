@@ -276,7 +276,7 @@ export default function PlatformDashboard() {
         {/* Welcome Section */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-divider/40 pb-6">
           <div className="space-y-1">
-            <h1 className="text-2xl font-black tracking-tight uppercase">App Builder Console</h1>
+            <h1 className="text-2xl font-bold tracking-tight">App Builder Studio</h1>
             <p className="text-xs text-secondary-text">Deploy custom template-driven AI SaaS apps dynamically.</p>
           </div>
           {status === "authenticated" && (
@@ -290,18 +290,52 @@ export default function PlatformDashboard() {
         </div>
 
         {status === "unauthenticated" ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center py-20 bg-bg-card/20 border border-divider/30 rounded-lg">
-            <FaRocket className="text-5xl text-primary/40 animate-pulse mb-4" />
-            <h2 className="text-xl font-black uppercase tracking-tight">Create Custom AI SaaS Apps</h2>
-            <p className="text-xs text-secondary-text max-w-sm mt-2 leading-relaxed">
-              Log in to access your builder dashboard. Launch AI Image generators, custom chatbots, and audio transcribers configured specifically with your branding.
+          <div className="flex-1 flex flex-col items-center text-center pt-14 pb-10">
+            <span className="inline-flex items-center gap-2 bg-primary/10 text-primary text-[11px] font-bold px-4 py-1.5 rounded-full mb-6">
+              <FaRocket className="text-[10px]" /> AI-powered creative platform
+            </span>
+            <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-[1.1] max-w-3xl">
+              Turn your ideas into{" "}
+              <span className="bg-gradient-to-r from-violet-600 via-fuchsia-500 to-indigo-500 bg-clip-text text-transparent">
+                stunning visuals
+              </span>
+            </h2>
+            <p className="text-sm text-secondary-text max-w-xl mt-5 leading-relaxed">
+              Launch your own AI image generators, chatbots and creative apps in minutes.
+              No code required — just describe what you want and watch it come to life.
             </p>
-            <Link
-              href="/login"
-              className="mt-6 bg-primary text-white px-8 py-3 rounded-full text-xs font-bold hover:bg-primary-hover transition-all shadow-lg shadow-primary/20"
-            >
-              Get Started Free
-            </Link>
+            <div className="flex items-center gap-3 mt-8">
+              <Link
+                href="/login"
+                className="bg-primary text-white px-8 py-3.5 rounded-full text-sm font-bold hover:bg-primary-hover transition-all shadow-lg shadow-primary/25 active:scale-95"
+              >
+                Get Started Free
+              </Link>
+              <Link
+                href="/gallery"
+                className="bg-bg-card text-primary-text border border-divider px-8 py-3.5 rounded-full text-sm font-bold hover:bg-bg-card-hover transition-all active:scale-95"
+              >
+                Explore Gallery
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-14 w-full max-w-4xl">
+              {[
+                { seed: 11, prompt: "futuristic city skyline at golden hour, ultra detailed" },
+                { seed: 22, prompt: "portrait of an astronaut surrounded by blooming flowers" },
+                { seed: 33, prompt: "cozy mountain cabin in the snow, warm lights, photorealistic" },
+                { seed: 44, prompt: "colorful abstract liquid art, studio lighting" },
+              ].map((img) => (
+                <div key={img.seed} className="aspect-square rounded-2xl overflow-hidden border border-divider bg-bg-card-hover shadow-md">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`https://image.pollinations.ai/prompt/${encodeURIComponent(img.prompt)}?width=512&height=512&seed=${img.seed}&nologo=true`}
+                    alt={img.prompt}
+                    loading="lazy"
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         ) : loading ? (
           <div className="flex-1 flex items-center justify-center py-20">
@@ -319,7 +353,7 @@ export default function PlatformDashboard() {
               ].map((m, idx) => (
                 <div key={idx} className="bg-bg-card border border-divider/50 rounded-lg p-5 flex flex-col justify-between h-28 shadow-sm">
                   <span className="text-[10px] font-black text-secondary-text uppercase tracking-widest">{m.label}</span>
-                  <span className="text-2xl font-black text-white">{m.value}</span>
+                  <span className="text-2xl font-black text-primary-text">{m.value}</span>
                   <span className="text-[10px] text-secondary-text font-semibold">{m.desc}</span>
                 </div>
               ))}
@@ -857,7 +891,7 @@ export default function PlatformDashboard() {
                         { key: `param_${Date.now().toString().slice(-4)}`, label: "New Parameter", type: "text", defaultValue: "" }
                       ]);
                     }}
-                    className="w-full py-2.5 border border-dashed border-divider hover:border-primary/50 text-[10px] font-bold text-secondary-text hover:text-white rounded transition-colors cursor-pointer"
+                    className="w-full py-2.5 border border-dashed border-divider hover:border-primary/50 text-[10px] font-bold text-secondary-text hover:text-primary-text rounded transition-colors cursor-pointer"
                   >
                     + Add Custom Parameter
                   </button>
